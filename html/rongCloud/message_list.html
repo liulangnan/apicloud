@@ -34,7 +34,7 @@
         rong = api.require('rongCloud');
         //初始化
         init();
-        //消息监听
+        //消息的监听，监听到新消息后将消息广播出去，在会话页面监听接收并判断
         setOnReceiveMessageListener();
         //连接融云服务器
         connect();
@@ -47,7 +47,7 @@
                 getHistoryMessages(value.targetId,value.type);
             }
         });
-        //监听发送新消息
+        //监听发送新消息，监听完成后将消息再次广播出去，会话页面监听接收
         api.addEventListener({
             name:'sendMessage'
         },function(ret){
@@ -67,6 +67,7 @@
         })
         api.hideProgress();
     };
+    //批量获取用户信息
     function getUserInfos(userids){
         api.ajax({
             url: 'http://www.maodoo.net/App/Index/getUserInfos',
@@ -90,6 +91,7 @@
             }
         });
     }
+    //获取单个用户信息
     function getUserInfo(userid){
         api.ajax({
             url: 'http://www.maodoo.net/App/Index/getUserInfo',
@@ -135,7 +137,7 @@
                         if($api.byId("targetMessage-"+ret.result.message.targetId)){
                             $api.text($api.byId("targetMessage-"+ret.result.message.targetId),'我：'+ret.result.message.content.text);
                             
-                            if($api.dom("messageList li")){
+                            if($api.dom("#messageList li")){
                                 $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
                             }
                         }else{
@@ -170,7 +172,7 @@
                             if($api.byId("targetMessage-"+ret.result.message.targetId)){
                                 $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"我：[图片]");
                                 
-                                if($api.dom("messageList li")){
+                                if($api.dom("#messageList li")){
                                     $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
                                 }
                             }else{
@@ -209,7 +211,7 @@
                             if($api.byId("targetMessage-"+ret.result.message.targetId)){
                                 $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"我：[语音]");
                                 
-                                if($api.dom("messageList li")){
+                                if($api.dom("#messageList li")){
                                     $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
                                 }
                             }else{
@@ -251,7 +253,7 @@
                             if($api.byId("targetMessage-"+ret.result.message.targetId)){
                                 $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"我：[位置]");
                                 
-                                if($api.dom("messageList li")){
+                                if($api.dom("#messageList li")){
                                     $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
                                 }
                             }else{

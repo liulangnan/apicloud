@@ -1,0 +1,53 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+.active {
+    background-color: #f4f4f4;
+}
+</style>
+<body>
+    <header class="aui-bar aui-bar-nav aui-bar-info" id="aui-header">
+        <a class="aui-btn aui-btn-info aui-pull-left" id="back" tapmode onclick="closeWin()">
+            <span class="aui-iconfont aui-icon-left"></span>
+        </a>
+        <div class="aui-title">位置</div>
+        <a class="aui-btn aui-btn-info aui-pull-right" tapmode onclick="confirm();">
+            结果
+        </a>
+    </header>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    function confirm(){
+        api.execScript({
+            frameName:'demo_mark_frm',
+            script:'showInfo()'
+        })
+    }
+    apiready = function(){
+        api.parseTapmode();
+        var header = $api.byId('aui-header');
+        var headerPos = $api.offset(header);
+        api.openFrame({
+            name: 'demo_mark_frm',
+            url: 'demo_mark_frm.html',
+            bounces: false,
+            rect: {
+                x: 0,
+                y: headerPos.h,
+                w: 'auto',
+                h: 'auto'
+            }
+        });
+    };
+    function closeWin(){
+        api.closeWin();
+    }
+</script>
+</html>
