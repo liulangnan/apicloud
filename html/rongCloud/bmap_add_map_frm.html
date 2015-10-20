@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+body {
+    background-color: #ffffff;
+}
+</style>
+<body>
+    
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+
+	var targetId,
+		map,
+		lat,
+		lon,
+		address;
+    apiready = function(){
+    	targetId = api.pageParam.targetId;
+        api.parseTapmode();
+        map = api.require('bMap');
+        
+		api.showProgress({
+		    style: 'default',
+		    animationType: 'fade',
+		    title: '定位中...',
+		    text: '请稍候...',
+		    modal: false
+		});
+		setTimeout(function(){
+			api.openFrame({
+				name:'bmap_add_markinfo_frm',
+				url:'bmap_add_markinfo_frm.html',
+				rect:{
+					x:0,
+					y:45,
+					w:'auto',
+					h:30
+				},
+				bounces:false,
+				vScrollBarEnabled:false,
+				hScrollBarEnabled:false
+			})
+			//打开地图
+        	open();
+        	map.addEventListener({
+			    name: 'viewChange'
+			},function(ret){
+			    if(ret.status){
+			        lon = ret.lon;
+			        lat = ret.lat;
+			        getNameFromCoords();
+			    }
+			});
+		},400)
+		
+    }
+    function sendMessage(){
+    	//提交，将位置和地址名称广播出去,在消息列表页面监听
+    	api.sendEvent({
+    		name:'sendMessage',
+    		extra:{
+    			targetId:targetId,
+    			objectName:'RC:LBSMsg',
+    			conversationType:'PRIVATE',
+    			message:{
+    				longitude:lon,
+	    			latitude:lat,
+	    			poi:address
+    			}
+    			
+    		}
+    	})
+    	api.closeWin({
+    		name:'bmap_add_win'
+    	})
+    }
+    function getNameFromCoords(){
+    	map.getNameFromCoords({
+		    lon: lon,
+		    lat: lat
+		},function(ret,err){
+		    if(ret.status){
+		        //alert(JSON.stringify(ret));
+		        address = ret.address;
+		        api.execScript({
+		        	frameName:'bmap_add_markinfo_frm',
+		        	script:'setInfo("'+address+'")'
+		        })
+		    }
+		});
+    }
+    function open(){
+		map.open({
+		    rect: {
+		        x: 0,
+		        y: 0,
+		        w: 'auto',
+		        h: api.frameHeight
+		    },
+		    /*center: {
+		        lon: lon,
+		        lat: lat
+		    },*/
+		    zoomLevel: 17,
+		    showUserLocation: false,
+		    fixedOn: 'bmap_add_map_frm',
+		    fixed: true
+		}, function(ret){
+			if(ret){
+
+				//获取位置坐标
+				getLocation();
+			}
+		});
+    }
+    function getLocation(){
+    	
+    	map.getLocation({
+		    accuracy: '100m',
+		    autoStop: true,
+		    filter: 1
+		}, function(ret, err){
+			api.hideProgress();
+		    if(ret.status){
+		    	lat = ret.lat;
+		        lon = ret.lon;
+		        //设置地图中心
+		        map.setCenter({
+				    coords: {
+				        lon: lon,
+				        lat: lat
+				    },
+				    animation:true
+				});
+				api.openFrame({
+					name:'bmap_add_mark_frm',
+					url:'bmap_add_mark_frm.html',
+					rect:{
+						x:api.frameWidth/2-24,
+						y:api.frameHeight/2,
+						w:48,
+						h:48
+
+					},
+					bounces:false,
+					vScrollBarEnabled:false,
+					hScrollBarEnabled:false
+				})
+				getNameFromCoords();
+		    }
+		    
+		});
+    }
+</script>
+</html>

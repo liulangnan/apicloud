@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>登录注册</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<body>
+    <header class="aui-bar aui-bar-nav aui-bar-info" id="aui-header">
+        <a class="aui-btn aui-btn-info aui-pull-left" id="back" tapmode onclick="closeWin();">
+            <span class="aui-iconfont aui-icon-close"></span>
+        </a>
+        <div class="aui-title">登录</div>
+    </header>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    function setIndex(index){
+        api.setFrameGroupIndex({
+            name: 'loginAndRegister_frm',
+            index:index,
+            scroll:true
+        });
+    }
+    apiready = function(){
+        api.parseTapmode();
+        var header = $api.byId('aui-header');
+        var headerPos = $api.offset(header);
+        api.openFrameGroup ({
+            name: 'loginAndRegister_frm',
+            background:'#fff',
+            scrollEnabled:false,
+            rect:{x:0, y:headerPos.h, w:'auto', h:'auto'},
+            index:0,
+
+            frames:
+            [{
+                name: 'login', 
+                url: 'login.html',
+                bgColor: '#fff',
+                bounces:false
+            },{
+                name: 'register', 
+                url: 'register.html', 
+                bgColor: '#fff',
+                bounces:false
+            }]
+        }, function(ret, err){
+            var name = ret.name;
+            var index = ret.index;
+        });
+    };
+    function closeWin(){
+        api.closeWin();
+    }
+</script>
+</html>

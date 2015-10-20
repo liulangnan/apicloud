@@ -1,0 +1,71 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+body {
+    background: #f4f4f4;
+}
+.aui-content {
+    height: 200px;
+    overflow: hidden;
+    margin-bottom: 0 !important;
+}
+.aui-input-addon.aui-iconfont {
+    font-size: 20px !important;
+}
+p {
+    margin: 15px 0;
+}
+</style>
+<body>
+    <div class="aui-content">    
+        <p class="aui-text-center">请输入目的地</p>   
+        <div class="aui-form">
+            <div class="aui-input-row">
+                <i class="aui-input-addon aui-iconfont aui-icon-locationfill aui-text-success"></i>
+                <input type="text" class="aui-input" id="startCity" placeholder="出发地" readonly />
+            </div>
+            <div class="aui-input-row" tapmode onclick="showSearch();">
+                <i class="aui-input-addon aui-iconfont aui-icon-locationfill aui-text-warning"></i>
+                <input type="text" class="aui-input" id="endCity" placeholder="目的地" readonly/>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    function demo(method){
+        api.execScript({
+            frameName:'baidu_map_frm',
+            script:''+method+'()'
+        })
+    }
+    function showSearch(){
+        api.openWin({
+            name: 'demo_line_search_win',
+            url: 'demo_line_search_win.html',
+            bounces:false,
+            delay: 300
+        });
+    }
+    function showStartCity(name){
+        $api.val($api.byId("startCity"),name);
+    }
+    function insertEndCity(lat,lon,name){
+        $api.val($api.byId("endCity"),name);
+        api.execScript({
+            name:'baidumap/demo_line_win',
+            frameName:'demo_line_frm',
+            script:'drawRoute("'+lat+'","'+lon+'")'
+        })
+    }
+    apiready = function(){
+        api.parseTapmode();
+    };
+</script>
+</html>

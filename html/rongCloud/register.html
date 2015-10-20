@@ -1,0 +1,201 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>登录注册</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+    .aui-btn-block {
+        margin-bottom: 10px;
+    }
+    .avatar-box {
+        width: 100%;
+        padding: 30px 0 15px 0;
+        text-align: center;
+    }
+    #avatarImg {
+        width: 80px;
+        height: 80px;
+        border-radius: 40px;
+    }
+</style>
+<body>
+    <div class="aui-content">       
+        <div class="aui-form">
+            <div class="avatar-box">
+                <img src="../../image/noavatar.gif" id="avatarImg" tapmode onclick="getPicture();" />
+                
+            </div>
+            <input type="hidden" name="avatar" id="avatar" />
+            <div class="aui-input-row">
+                <span class="aui-input-addon">邮箱</span>
+                <input type="text" class="aui-input" id="email" placeholder="邮箱"/>
+            </div>
+            <div class="aui-input-row">
+                <span class="aui-input-addon">昵称</span>
+                <input type="text" class="aui-input" id="nickname" placeholder="昵称"/>
+            </div>
+            <div class="aui-input-row">
+                <span class="aui-input-addon">密码</span>
+                <input type="password" id="password" class="aui-input" placeholder="密码"/>
+                <i class="aui-input-addon aui-iconfont aui-icon-attention aui-text-default" tapmode onclick="showPassword();" id="showpass-btn"></i>
+            </div>
+            <div class="aui-btn-row">
+                <div class="aui-btn aui-btn-block aui-btn-info" tapmode onclick="register()">注册</div>
+                <div class="aui-btn aui-btn-block aui-btn-default" tapmode onclick="toSetIndex()">已有账号！直接登录</div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    function register(){
+        var avatar = $api.val($api.byId("avatar"));
+        var email = $api.val($api.byId("email"));
+        var nickname = $api.val($api.byId("nickname"));
+        var password = $api.val($api.byId("password"));
+        if(!avatar){
+            api.toast({
+                msg: '请上传头像',
+                duration:2000,
+                location: 'top'
+            });
+            return;
+        }
+        if(!email || !nickname || !password){
+            api.toast({
+                msg: '请完善资料',
+                duration:2000,
+                location: 'top'
+            });
+            return;
+        }
+        api.showProgress({
+            style: 'default',
+            animationType: 'fade',
+            title: '注册中',
+            text: '请稍后',
+            modal: false
+        });
+
+        api.ajax({
+            url: 'http://www.maodoo.net/App/Index/register',
+            method: 'post',
+            timeout: 30,
+            dataType: 'json',
+            returnAll:false,
+            data:{
+                values:{
+                    avatar:avatar,
+                    username:email,
+                    nickname:nickname,
+                    password:password
+                }
+            }
+        },function(ret,err){
+            api.hideProgress();
+            if (ret) {
+                if(ret.code==200){
+                    //登录成功
+                    $api.clearStorage();
+                    $api.setStorage('userid',''+ret.data.userid+'');
+                    $api.setStorage('encrypt',''+ret.data.encrypt+'');
+                    $api.setStorage('nickname',''+ret.data.nickname+'');
+                    $api.setStorage('avatar',''+ret.data.avatar+'');
+                    $api.setStorage('token',''+ret.data.token+'');
+                    api.imageCache({
+                        url: ret.data.avatar
+                    },function(ret,err){
+                    });
+                    api.sendEvent({
+                        name:'login',
+                        extra:{
+                            userid:ret.data.userid
+                        }
+                    })
+                }else{
+                    api.alert({
+                        msg:''+ret.msg+''
+                    });
+                }
+            }else {
+                api.alert({
+                    msg:('错误码：'+err.code+'；错误信息：'+err.msg+'网络状态码：'+err.statusCode)
+                });
+            }
+        });
+    }
+    function getPicture(){
+        api.getPicture({
+            sourceType: 'library',
+            encodingType: 'jpg',
+            mediaValue: 'pic',
+            destinationType: 'url',
+            allowEdit: true,
+            quality: 80,
+            targetWidth:200,
+            targetHeight:200,
+            saveToPhotoAlbum: false
+        }, function(ret, err){ 
+            if (ret) {
+                api.showProgress({
+                    style: 'default',
+                    animationType: 'fade',
+                    title: '上传中',
+                    text: '请稍后',
+                    modal: false
+                });
+                //上传图片
+                api.ajax({
+                    url: 'http://www.maodoo.net/Attachment/Index/upload',
+                    method: 'post',
+                    timeout: 30,
+                    dataType: 'json',
+                    returnAll:false,
+                    data:{
+                        files: {file: ret.data}
+                    }
+                },function(ret,err){
+                    api.hideProgress();
+                    if (ret) {
+                        $api.attr($api.byId("avatarImg"),'src',ret.path);
+                        $api.val($api.byId("avatar"),ret.path);
+                        
+                    }else {
+                        api.alert({
+                            msg:('错误码：'+err.code+'；错误信息：'+err.msg+'网络状态码：'+err.statusCode)
+                        });
+                    }
+                });
+            } else{
+                api.alert({msg:err.msg});
+            }
+        });
+    }
+    function toSetIndex(index){
+        api.execScript({
+            name:'loginAndRegister_win',
+            script:"setIndex(0)"
+        })
+    }
+    apiready = function(){
+        api.parseTapmode();
+    };
+    function showPassword(){
+        $api.attr($api.byId('password'),'type','text');
+        $api.removeCls($api.byId('showpass-btn'),'aui-icon-attention');
+        $api.addCls($api.byId('showpass-btn'),'aui-icon-attentionfill');
+        $api.attr($api.byId('showpass-btn'),'onclick','hidePassword();');
+        api.parseTapmode();
+    }
+    function hidePassword(){
+        $api.attr($api.byId('password'),'type','password');
+        $api.removeCls($api.byId('showpass-btn'),'aui-icon-attentionfill');
+        $api.addCls($api.byId('showpass-btn'),'aui-icon-attention');
+        $api.attr($api.byId('showpass-btn'),'onclick','showPassword();');
+        api.parseTapmode();
+    }
+</script>
+</html>

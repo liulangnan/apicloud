@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../css/aui.css" />
+</head>
+<style type="text/css">
+.active {
+    background-color: #f4f4f4;
+}
+</style>
+<body>
+    <div class="aui-content">
+        <ul class="aui-list-view">
+            <li class="aui-list-view-cell" tapmode="active" onclick="openWin('baidumap/baidu_map')">
+                <a class="aui-arrow-right">百度地图(bMap)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="openWin('baidumap/demo_line')">
+                <a class="aui-arrow-right">地图案例一：(线路规划)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="openWin('rongCloud/rongcloud')">
+                <a class="aui-arrow-right">融云即时通讯(rongCloud)<span class="aui-badge aui-badge-warning">单聊完成</span></a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active">
+                <a class="aui-arrow-right">微信登录(wx)<span class="aui-badge aui-badge-info">整理中</span></a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active">
+                <a class="aui-arrow-right">微信支付(wxPay)<span class="aui-badge aui-badge-info">整理中</span></a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active">
+                <a class="aui-arrow-right">QQ登录(qq)<span class="aui-badge aui-badge-info">整理中</span></a>
+            </li>
+            
+            
+        </ul>
+    </div>
+</body>
+<script type="text/javascript" src="../script/api.js" ></script>
+<script type="text/javascript">
+    apiready = function () {
+        $api.rmStorage('userid');
+        api.parseTapmode();
+        //监听登录
+        api.addEventListener({
+            name: 'login'
+        }, function(ret){
+            if(ret && ret.value){
+                var value = ret.value;
+                var userid = value.userid;
+                api.openWin({
+                    name: 'rongCloud/rongcloud_win',
+                    url: 'rongCloud/rongcloud_win.html',
+                    bounces:false,
+                    delay: 300
+                });
+                api.closeWin({
+                    name:'loginAndRegister_win'
+                })
+            }
+        });
+    }
+    function openWin(name){
+        var userid = $api.getStorage('userid');
+        if(name=='rongCloud/rongcloud'){
+            if(!userid){
+                api.openWin({
+                    name:'loginAndRegister_win',
+                    url:'rongCloud/loginAndRegister_win.html',
+                    bounces:false,
+                    delay:300,
+                    animation:{
+                        type:'fade'
+                    }
+                })
+            }else{
+                api.openWin({
+                    name: 'rongCloud/rongcloud_win',
+                    url: 'rongCloud/rongcloud_win.html',
+                    bounces:false,
+                    delay: 300
+                });
+            }
+            
+        }else{
+            api.openWin({
+                name: ''+name+'_win',
+                url: ''+name+'_win.html',
+                bounces:false,
+                delay: 300
+            });
+        }
+        
+    }
+</script>
+</html>

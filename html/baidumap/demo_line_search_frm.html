@@ -1,0 +1,133 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+body {
+    background: #f4f4f4;
+}
+.aui-input-addon.aui-iconfont {
+    font-size: 20px !important;
+}
+</style>
+<body>
+    <div class="aui-content">       
+        <div class="aui-form">
+            <div class="aui-input-row">
+                <div class="aui-input-addon aui-text-warning" id="city">加载中</div>
+                <input type="text" class="aui-input" id="keyword" placeholder="请输入目的地名称" />
+                <div class="aui-input-addon"><div class="aui-btn aui-btn-info" tapmode onclick="doSearch(1,1,3)">搜索</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="aui-content">
+        <ul class="aui-list-view" id="result">
+        </ul>
+    </div>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    var map,lat,lon,city;
+    apiready = function(){
+        api.showProgress({
+            style: 'default',
+            animationType: 'fade',
+            title: '加载中...',
+            text: '请稍候...',
+            modal: false
+        });
+        api.parseTapmode();
+        map = api.require('bMap');
+        map.getLocation({
+            accuracy: '100m',
+            autoStop: true,
+            filter: 1
+        }, function(ret, err){
+            api.hideProgress();
+            if(ret.status){
+                lat = ret.lat;
+                lon = ret.lon;
+                map.getNameFromCoords({
+                    lon: ret.lon,
+                    lat: ret.lat
+                },function(ret,err){
+                    if(ret.status){
+                        $api.text($api.byId('city'),ret.city);
+                        //默认加载附近的小区
+                        searchNearBy();
+                    }
+                });
+            }
+
+        });
+
+    };
+    function searchNearBy(){
+        map.searchNearby({
+            keyword: '小区',
+            lon: lon,
+            lat: lat,
+            radius: 5000
+        },function(ret,err){
+            if(ret.status){
+                var html = '';
+                for(var i in ret.results){
+                    html += '<li class="aui-list-view-cell" tapmode onclick="backResult('+ret.results[i].lat+','+ret.results[i].lon+',\''+ret.results[i].name+'\')" data-lat="'+ret.results[i].lat+'" data-lon="'+ret.results[i].lon+'"><div class="aui-img-body">';
+                    html += ret.results[i].name;
+                    html += '<p class="aui-ellipsis-1">'+ret.results[i].address+'</p>';
+                    html += '</div></li>';
+                }
+                $api.append($api.byId("result"),html);
+                api.parseTapmode();
+                api.hideProgress();
+            }else{
+                alert(JSON.stringify(err));
+                api.hideProgress();
+            }
+
+        });
+    }
+    function backResult(lat1,lon1,name){
+        api.execScript({
+            name:'baidumap/demo_line_win',
+            frameName:'demo_line_footer_frm',
+            script:'insertEndCity("'+lat1+'","'+lon1+'","'+name+'");'
+        })
+        api.closeWin({
+            name:'demo_line_search_win'
+        });
+        
+    }
+    function doSearch(){
+        var keyword = $api.val($api.byId('keyword'));
+        if(!keyword){
+            return;
+        }
+        map.searchInCity({
+            city: ''+city+'',
+            keyword: ''+keyword+'',
+            pageIndex: 0,
+            pageCapacity: 20
+        },function(ret){
+            if(ret.status){
+                $api.html($api.byId("result"),'');
+                var html = '';
+                for(var i in ret.results){
+                    html += '<li class="aui-list-view-cell" tapmode onclick="backResult('+ret.results[i].lat+','+ret.results[i].lon+',\''+ret.results[i].name+'\')" data-lat="'+ret.results[i].lat+'" data-lon="'+ret.results[i].lon+'"><div class="aui-img-body">';
+                    html += ret.results[i].name;
+                    html += '<p class="aui-ellipsis-1">'+ret.results[i].address+'</p>';
+                    html += '</div></li>';
+                }
+                $api.append($api.byId("result"),html);
+                api.parseTapmode();
+            }else{
+                alert("没有搜索到结果");
+            }
+        });
+    }
+</script>
+</html>

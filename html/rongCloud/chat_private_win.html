@@ -1,0 +1,55 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<body>
+    <header class="aui-bar aui-bar-nav aui-bar-info" id="aui-header">
+        <a class="aui-btn aui-btn-info aui-pull-left" id="back" tapmode onclick="closeWin();">
+            <span class="aui-iconfont aui-icon-left"></span>
+        </a>
+        <div class="aui-title" id="nickname">会话</div>
+    </header>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    
+    apiready = function(){
+        $api.text($api.byId('nickname'),api.pageParam.targetNickname);
+        var header = $api.byId('aui-header');
+        var headerPos = $api.offset(header);
+        var body_h = $api.offset($api.dom('body')).h;
+        api.openFrame({
+            name: 'chat_private_frm',
+            url: 'chat_private_frm.html',
+            bounces: true,
+            rect: {
+                x: 0,
+                y: headerPos.h,
+                w: 'auto',
+                h: api.winHeight-headerPos.h-45
+            },
+            pageParam:{
+                targetId:api.pageParam.targetId,
+                targetAvatar:api.pageParam.targetAvatar,
+                targetNickname:api.pageParam.targetNickname
+            }
+        });
+        api.addEventListener({
+            name:'keyback'
+        },function(ret,err){
+            closeWin();
+        });
+    };
+    function closeWin(){
+        api.sendEvent({
+            name:'closeChat'
+        })
+        api.closeWin();
+    }
+</script>
+</html>

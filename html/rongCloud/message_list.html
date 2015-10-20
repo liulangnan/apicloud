@@ -1,0 +1,515 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <title>会话</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+    
+</head>
+<body>
+    <div class="aui-content">
+        <ul class="aui-user-view" id="messageList">
+            <p class="aui-text-center" id="noMessage">暂无会话消息</p>
+        </ul>
+    </div>
+</body>
+<script type="text/javascript" src="../../script/api.js"></script>
+<script type="text/javascript">
+    /**
+    *消息页面确保在app中为永久打开，融云的初始化，会话列表，消息监听，消息发送的处理都在此页面内完成
+    */
+    var rong,targetIdIng;
+    apiready = function(){
+        api.showProgress({
+            style: 'default',
+            animationType: 'fade',
+            title: '初始化中',
+            text: '请稍候',
+            modal: false
+        });
+        api.parseTapmode();
+        //加载融云模块
+        rong = api.require('rongCloud');
+        //初始化
+        init();
+        //消息监听
+        setOnReceiveMessageListener();
+        //连接融云服务器
+        connect();
+        //监听获取历史消息
+        api.addEventListener({
+            name: 'getHistoryMessages'
+        }, function(ret){
+            if(ret && ret.value){
+                var value = ret.value;
+                getHistoryMessages(value.targetId,value.type);
+            }
+        });
+        //监听发送新消息
+        api.addEventListener({
+            name:'sendMessage'
+        },function(ret){
+            if(ret && ret.value){
+                var data = ret.value;
+                //目标id，消息内容，消息类型
+                sendMessage(data.targetId,data.conversationType,data.objectName,data.message);
+            }
+        })
+        //监听聊天窗口关闭,主要清除正在会话的用户id
+        api.addEventListener({
+            name:'closeChat'
+        },function(ret){
+            if(ret){
+                targetIdIng='';
+            }
+        })
+        api.hideProgress();
+    };
+    function getUserInfos(userids){
+        api.ajax({
+            url: 'http://www.maodoo.net/App/Index/getUserInfos',
+            method: 'post',
+            timeout: 30,
+            dataType: 'json',
+            returnAll:false,
+            data:{
+                values:{
+                    userids:userids
+                }
+            }
+        },function(ret,err){
+            if (ret) {
+                for(var i in ret){
+                    if(ret[i].userid){
+                        $api.attr($api.byId("avatar-"+ret[i].userid),'src',ret[i].avatar);
+                        $api.text($api.byId("nickname-"+ret[i].userid),ret[i].nickname);
+                    }
+                }
+            }
+        });
+    }
+    function getUserInfo(userid){
+        api.ajax({
+            url: 'http://www.maodoo.net/App/Index/getUserInfo',
+            method: 'post',
+            timeout: 30,
+            dataType: 'json',
+            returnAll:false,
+            data:{
+                values:{
+                    userid:userid
+                }
+            }
+        },function(ret,err){
+            if (ret) {
+                $api.attr($api.byId("avatar-"+ret.userid),'src',ret.avatar);
+                $api.text($api.byId("nickname-"+ret.userid),ret.nickname);
+                api.imageCache({
+                    url: ret.avatar
+                },function(ret,err){
+                });
+            }
+        });
+    }
+
+    //发送消息
+    function sendMessage(targetId,conversationType,objectName,message){
+
+        switch(objectName){
+            //文字消息
+            case 'RC:TxtMsg':
+                rong.sendTextMessage({
+                    conversationType: conversationType,
+                    targetId: targetId,
+                    text: message,
+                    extra: ''
+                }, function (ret, err) {
+                    if (ret.status == 'prepare'){
+                        //发送准备，广播出去，在会话页面监听接收
+                        api.sendEvent({
+                            name: 'backSendMessage',
+                            extra: {message:ret.result.message}
+                        });
+                        if($api.byId("targetMessage-"+ret.result.message.targetId)){
+                            $api.text($api.byId("targetMessage-"+ret.result.message.targetId),'我：'+ret.result.message.content.text);
+                            
+                            if($api.dom("messageList li")){
+                                $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
+                            }
+                        }else{
+                            var message = "我："+ret.result.message.content.text;
+                            firstSendMessage(targetId,message);
+                        }
+                        
+                        
+                    }else if (ret.status == 'success'){
+                        //发送成功的处理
+                    }else if (ret.status == 'error'){
+                        //发送失败的处理
+                        //api.toast({ msg: err.code });
+                    }
+                })
+            break;
+            //图片消息
+            case 'RC:ImgMsg':
+                
+                rong.sendImageMessage({
+                        conversationType: ''+conversationType+'',
+                        targetId: ''+targetId+'',
+                        imagePath: message,
+                        extra: ''
+                    }, function (ret, err) {
+                        if (ret.status == 'prepare'){
+                            //发送准备，广播出去，在会话页面监听接收
+                            api.sendEvent({
+                                name: 'backSendMessage',
+                                extra: {message:ret.result.message}
+                            });
+                            if($api.byId("targetMessage-"+ret.result.message.targetId)){
+                                $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"我：[图片]");
+                                
+                                if($api.dom("messageList li")){
+                                    $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
+                                }
+                            }else{
+                                var message = "我：[图片]";
+                                firstSendMessage(targetId,message);
+                            }
+                        }else if (ret.status == 'progress'){
+                            //广播图片的进度
+                            
+                        }else if (ret.status == 'success'){
+                            api.sendEvent({
+                                name: 'backSendMessageSuccess',
+                                extra: {messageId:ret.result.message.messageId}
+                            });
+                        }else if (ret.status == 'error'){
+                            api.toast({ msg: err.code });
+                        }
+                });
+            break;
+            //语音消息
+            case 'RC:VcMsg':
+                
+                rong.sendVoiceMessage({
+                        conversationType: ''+conversationType+'',
+                        targetId: ''+targetId+'',
+                        voicePath: ''+message.path+'',
+                        duration: ''+message.duration+'',
+                        extra: ''
+                    }, function (ret, err) {
+                        if (ret.status == 'prepare'){
+                            //发送准备，广播出去，在会话页面监听接收
+                            api.sendEvent({
+                                name: 'backSendMessage',
+                                extra: {message:ret.result.message}
+                            });
+                            if($api.byId("targetMessage-"+ret.result.message.targetId)){
+                                $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"我：[语音]");
+                                
+                                if($api.dom("messageList li")){
+                                    $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
+                                }
+                            }else{
+                                var message = "我：[语音]";
+                                firstSendMessage(targetId,message);
+                            }
+                        }else if (ret.status == 'success'){
+                            api.toast({ msg: ret.result.message.messageId });
+                        }
+                        else if (ret.status == 'error'){
+                            api.toast({ msg: err.code });
+                        }
+                    }
+                );
+            break;
+            //图文消息
+            case 'RC:ImgTextMsg':
+                
+            break;
+            //位置消息
+            case 'RC:LBSMsg':
+
+                rong.sendLocationMessage({
+                        conversationType: ''+conversationType+'',
+                        targetId: ''+targetId+'',
+                        latitude: message.latitude,
+                        longitude: message.longitude,
+                        poi: ''+message.poi+'',
+                        imagePath: ''+api.wgtRootDir+'/image/location.jpg',
+                        extra: ''
+                    }, function (ret, err) {
+                        
+                        //alert(JSON.stringify(err));
+                        if (ret.status == 'prepare'){
+                            api.sendEvent({
+                                name: 'backSendMessage',
+                                extra: {message:ret.result.message}
+                            });
+                            if($api.byId("targetMessage-"+ret.result.message.targetId)){
+                                $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"我：[位置]");
+                                
+                                if($api.dom("messageList li")){
+                                    $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
+                                }
+                            }else{
+                                var message = "我：[位置]";
+                                firstSendMessage(targetId,message);
+                            }
+                        }
+                        else if (ret.status == 'progress'){
+                            api.toast({ msg: ret.result.progress });
+                        }
+                        else if (ret.status == 'success'){
+                            api.toast({ msg: ret.result.message.messageId });
+                        }
+                        else if (ret.status == 'error'){
+                            api.toast({ msg: err.code });
+                        }
+                    }
+                );
+                
+            break;
+
+        }
+    }
+    //初次发送消息的写入
+    function firstSendMessage(targetId,message){
+        var html='';
+        html += '<li class="aui-user-view-cell aui-img" id="target-'+targetId+'" tapmode onclick="openChat('+targetId+')">';
+        html += '<img class="aui-img-object aui-pull-left" src="../../image/noavatar.gif" id="avatar-'+targetId+'">';
+        html += '<div class="aui-img-body">'
+        html += '<span id="nickname-'+targetId+'"></span>';
+        html += '<p class="aui-ellipsis-1" id="targetMessage-'+targetId+'">'+message+'</p>';
+        html += '</div>';
+        html += '</li>';
+        if($api.byId("noMessage")){
+            $api.remove($api.byId("noMessage"));
+        }
+        $api.prepend($api.byId("messageList"),html);
+        getUserInfo(targetId);
+        api.parseTapmode();
+    }
+    //初始化融云
+    function init(){
+        rong.init(function(ret, err){
+            if (ret.status == 'error'){
+                api.toast({ msg: err.code });
+            }
+        });
+    }
+    /**
+    *全局消息监听
+    *整个app项目中，所有的消息监听事件都在此方法中完成，如果正在会话，监听到消息后通过api.sendEvent方法广播出去
+    */
+    function setOnReceiveMessageListener(){
+        rong.setOnReceiveMessageListener(function (ret, err) {
+            if(ret.status=='success'){
+                if(targetIdIng!=ret.result.message.targetId){
+                    api.notification({
+                        sound:'default'
+                    }, function(ret, err){
+                    });
+                }
+                //将监听到的消息广播出去，在会话页面接收
+                api.sendEvent({
+                    name: 'getNewMessages',
+                    extra: {message:ret.result.message}
+                });
+
+                if($api.byId("noMessage")){
+                    $api.remove($api.byId("noMessage"));
+                }
+                //alert(JSON.stringify(ret));
+                //监听到新消息，根据新消息的目标id，类型及发送用户作相应处理
+                //1根据目标id判断消息容器是否存在
+                if($api.byId("target-"+ret.result.message.targetId)){
+                    //如果存在更新消息内容
+                    
+                    //此处也定义个id，更消息内容类型做个判断
+                    switch(ret.result.message.objectName){
+                        //文字消息
+                        case 'RC:TxtMsg':
+                           $api.text($api.byId("targetMessage-"+ret.result.message.targetId),ret.result.message.content.text);
+                        break;
+                        //图片消息
+                        case 'RC:ImgMsg':
+                            $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"[图片]");
+                        break;
+                        //语音消息
+                        case 'RC:VcMsg':
+                            $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"[语音]");
+                        break;
+                        //图文消息
+                        case 'RC:ImgTextMsg':
+                            $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"[图文]");
+                        break;
+                        //位置消息
+                        case 'RC:LBSMsg':
+                            $api.text($api.byId("targetMessage-"+ret.result.message.targetId),"[位置]");
+                        break;
+                    }
+                    //将当前消息容器移动到顶部
+                    if($api.dom("#messageList li")){
+                        $api.byId("messageList").insertBefore($api.byId("target-"+ret.result.message.targetId),$api.byId("messageList").childNodes[0]);
+                    }
+                    //$api.prepend($api.byId("messageList"),''+$api.byId("target-"+ret.result.message.targetId)+'');
+                    //添加红点
+                }else{
+                    //如果不存在写入
+                    var html='';
+                    html += '<li class="aui-user-view-cell aui-img" id="target-'+ret.result.message.targetId+'" tapmode onclick="openChat('+ret.result.message.targetId+')">';
+                    html += '<img class="aui-img-object aui-pull-left" src="../../image/noavatar.gif" id="avatar-'+ret.result.message.targetId+'">';
+                    html += '<div class="aui-img-body">'
+                    html += '<span id="nickname-'+ret.result.message.targetId+'"></span>';
+                    //此处也定义个id，更消息内容类型做个判断
+                    switch(ret.result.message.objectName){
+                        //文字消息
+                        case 'RC:TxtMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+ret.result.message.targetId+'">'+ret.result.message.content.text+'</p>';
+                        break;
+                        //图片消息
+                        case 'RC:ImgMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+ret.result.message.targetId+'">[图片]</p>';
+                        break;
+                        //语音消息
+                        case 'RC:VcMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+ret.result.message.targetId+'">[语音]</p>';
+                        break;
+                        //图文消息
+                        case 'RC:ImgTextMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+ret.result.message.targetId+'">[图文]</p>';
+                        break;
+                        //位置消息
+                        case 'RC:LBSMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+ret.result.message.targetId+'">[位置]</p>';
+                        break;
+                    }
+                    
+                    html += '</div>';
+                    html += '</li>';
+                    $api.prepend($api.byId("messageList"),html);
+                    getUserInfo(ret.result.message.targetId);
+                    api.parseTapmode();
+                }
+
+            }
+        })
+    }
+    /**
+    *连接融云服务器
+    *连接成功后使用getConversationList获取会话列表
+    */
+    function connect(){
+        //根据本地用户id，从服务器端获取用户融云的token
+        var token = $api.getStorage('token');
+        rong.connect({
+            token: ''+token+''},
+            function(ret, err){
+                if (ret.status == 'success'){
+                    //api.toast({ msg: ret.result.userId });
+                    //连接成功后获取会话列表
+                    getConversationList();
+                }else{
+                    alert(JSON.stringify(err));
+                }
+        });
+    }
+    //获取会话列表
+    function getConversationList(){
+        rong.getConversationList(function (ret, err) {
+            if(ret.status=='success'){
+                
+                //获取成功后将消息内容插入至容器
+                var targetIds='',
+                    html='',
+                    messageList = ret.result;
+
+                for(var i in messageList){
+                    //组装用户id，批量获取用户信息
+                    targetIds += messageList[i].targetId+',';
+                    //注意定义容器的id为消息目标id（targetId）
+                    html += '<li class="aui-user-view-cell aui-img" id="target-'+messageList[i].targetId+'" tapmode onclick="openChat('+messageList[i].targetId+')">';
+                    html += '<img class="aui-img-object aui-pull-left" src="../../image/noavatar.gif" id="avatar-'+messageList[i].targetId+'">';
+                    html += '<div class="aui-img-body">'
+                    html += '<span id="nickname-'+messageList[i].targetId+'">匿名</span>';
+                    //此处也定义个id，更消息内容类型做个判断
+                    switch(messageList[i].objectName){
+                        //文字消息
+                        case 'RC:TxtMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+messageList[i].targetId+'">'+messageList[i].latestMessage.text+'</p>';
+                        break;
+                        //图片消息
+                        case 'RC:ImgMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+messageList[i].targetId+'">[图片]</p>';
+                        break;
+                        //语音消息
+                        case 'RC:VcMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+messageList[i].targetId+'">[语音]</p>';
+                        break;
+                        //图文消息
+                        case 'RC:ImgTextMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+messageList[i].targetId+'">[图文]</p>';
+                        break;
+                        //位置消息
+                        case 'RC:LBSMsg':
+                            html += '<p class="aui-ellipsis-1" id="targetMessage-'+messageList[i].targetId+'">[位置]</p>';
+                        break;
+                    }
+                    html += '</div>';
+                    html += '</li>';
+                }
+                //去掉组装完用户id的最后符号
+                targetIds = targetIds.substring(0,targetIds.length-1);
+                //alert(targetIds);
+                if(html.length>0){
+                    $api.remove($api.byId("noMessage"));
+                }
+                getUserInfos(targetIds);
+                $api.prepend($api.byId("messageList"),html);
+                api.parseTapmode();
+            }
+            //alert(JSON.stringify(ret.result));
+        })
+    }
+    //获取某一会话的历史消息
+    function getHistoryMessages(targetId,type,oldestMessageId){
+        rong.getHistoryMessages({
+                conversationType: type,
+                targetId: targetId,
+                //oldestMessageId: oldestMessageId,
+                count: 20
+            }, function (ret, err) {
+                if(ret.status=='success'){
+                    //将获得的历史消息广播出去，在会话页面接收
+                    api.sendEvent({
+                        name: 'backHistoryMessages',
+                        extra: {message:ret.result}
+                    });
+                }
+        })
+    }
+    /**
+    *打开会话窗口
+    *传入目标id，及会话类型
+    */
+    function openChat(targetId){
+        //当前正在会话的targetId
+        targetIdIng = targetId;
+        var targetAvatar = $api.attr($api.byId("avatar-"+targetId),'src');
+        var targetNickname = $api.text($api.byId('nickname-'+targetId));
+        api.openWin({
+            name:'chat_private_win',
+            url:'chat_private_win.html',
+            delay:300,
+            pageParam:{
+                targetId:targetId,
+                targetAvatar:targetAvatar,
+                targetNickname:targetNickname
+            }
+        })
+    }
+</script>
+</html>

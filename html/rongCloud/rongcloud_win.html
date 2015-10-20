@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <title>融云</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+    <style>
+        .aui-bar {
+            /*background:#5b5a55;*/
+            background: #3bafda;
+            color: #ffffff
+        }
+        .aui-nav {
+            background-color: none;
+        }
+        .aui-nav .aui-bar-tab {
+            background-color: #fff;
+            border-top:1px solid #eee;
+            /*background: url('./image/footer-bar-bg.png') no-repeat;
+            background-size: 100% 55px;*/
+        }
+        .aui-nav .aui-bar-tab .aui-iconfont{
+            font-size: 26px !important;
+        }
+        .aui-nav .aui-bar-tab .aui-iconfont, .aui-nav .aui-bar-tab p {
+            color: #a2a2a2;
+        }
+        .aui-nav .aui-bar-tab .active{
+            /*background: rgba(0,0,0,0.2);
+            -webkit-animation: fadeIn .5s ease both;
+                    animation: fadeIn .5s ease both;*/
+        }
+        .aui-nav .aui-bar-tab .active .aui-iconfont, .aui-nav .aui-bar-tab .active p{
+
+            -webkit-animation: fontFade .8s ease both;
+                    animation: fontFade .8s ease both;
+        }
+        @-webkit-keyframes fadeIn {
+            from { background: rgba(156,114,82,0); }
+            to { background: rgba(156,114,82,0.6);}
+        }
+        @-webkit-keyframes fontFade {
+            from { color: #a2a2a2; }
+            to { color: #3bafda;}
+        }
+    </style>
+</head>
+<body>
+    <header class="aui-bar aui-bar-nav" id="aui-header">
+
+        <div class="aui-title" id="title">消息</div>
+        <a class="aui-pull-right" tapmode onclick="friends()">
+            好友
+        </a>
+    </header>
+    <footer class="aui-nav" id="aui-footer">
+        <ul class="aui-bar-tab">
+            <li class="active" id="message" tapmode onclick="openFrm('message')">
+                <span class="aui-iconfont aui-icon-message"></span>
+                <p>消息</p>
+            </li>
+            <li id="group" tapmode onclick="openFrm('group')">
+                <span class="aui-iconfont aui-icon-friend"></span>
+                <p>群组</p>
+            </li>
+            <li id="chat" tapmode onclick="openFrm('chat')">
+                <span class="aui-iconfont aui-icon-mark"></span>
+                <p>聊天室</p>
+            </li>
+        </ul>
+    </footer>
+</body>
+<script type="text/javascript" src="../../script/api.js"></script>
+<script type="text/javascript">
+    function friends(){
+        api.openWin({
+            name:'friends_win',
+            url:'friends_win.html',
+            delay:300
+        })
+    }
+    apiready = function(){
+        api.parseTapmode();
+        openFrm('message');
+    };
+    function hideFrames(){
+        api.setFrameAttr({
+            name: 'message_list',
+            hidden: true
+        });
+        api.setFrameAttr({
+            name: 'group_list',
+            hidden: true
+        });
+        api.setFrameAttr({
+            name: 'chat_list',
+            hidden: true
+        });
+        
+    }
+    function openFrm(name){
+        $api.removeCls($api.dom('#aui-footer li.active'),'active');
+        $api.addCls($api.byId(''+name+''),'active');
+
+        var header = $api.byId('aui-header');
+        //$api.fixStatusBar(header); 
+        var headerPos = $api.offset(header);
+        var body_h = $api.offset($api.dom('body')).h;
+        var footer_h = $api.offset($api.byId('aui-footer')).h;
+        hideFrames();
+        switch(name){
+            //动态,故事
+            case 'message':
+                $api.text($api.byId('title'),'消息');
+                api.openFrame({
+                    name: 'message_list',
+                    url: 'message_list.html',
+                    bounces: true,
+                    rect:{x:0, y:headerPos.h, w:'auto', h:body_h - headerPos.h - footer_h},
+                    vScrollBarEnabled: false,
+                    hScrollBarEnabled: false
+                }); 
+                break;
+            case 'group':
+                $api.text($api.byId('title'),'群组');
+                api.openFrame({
+                    name: 'group_list',
+                    url: 'group_list.html',
+                    bounces: true,
+                    rect:{x:0, y:headerPos.h, w:'auto', h:body_h - headerPos.h - footer_h},
+                    vScrollBarEnabled: false,
+                    hScrollBarEnabled: false
+                });
+                break;
+            case 'chat':
+                $api.text($api.byId('title'),'聊天室');
+                api.openFrame({
+                    name: 'chat_list',
+                    url: 'chat_list.html',
+                    bounces: false,
+                    rect:{x:0, y:headerPos.h, w:'auto', h:body_h - headerPos.h - footer_h},
+                    vScrollBarEnabled: false,
+                    hScrollBarEnabled: false
+                });
+                break;
+        }
+    }
+</script>
+</html>

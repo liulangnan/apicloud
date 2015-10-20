@@ -1,0 +1,477 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+.aui-content-padded {
+	margin: 0 10px;
+	padding: 10px 0;
+}
+</style>
+<body>
+    <div class="aui-content-padded" id="messageList"></div>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+	function playVoice(voicePath,messageId){
+		$api.addCls($api.byId("messageVoice-"+messageId),'aui-text-warning');
+		api.startPlay({
+		    path: voicePath
+		},function(){
+		    $api.removeCls($api.byId("messageVoice-"+messageId),'aui-text-warning');
+		});
+	}
+	var myAvatar,
+		targetId,targetAvatar,targetNickname,
+		chatBox,
+		sourcePath = "widget://image/emotion",//表情存放目录
+		emotionData;//存储表情
+    apiready = function(){
+    	myAvatar = $api.getStorage('avatar');
+    	targetId = api.pageParam.targetId;
+    	targetAvatar = api.pageParam.targetAvatar;
+        targetNickname = api.pageParam.targetNickname;
+        api.parseTapmode();
+        //表情图片处理
+        getImgsPaths(sourcePath, function (emotion) {
+	        emotionData = emotion;
+	    });
+	    //获取历史消息
+	    getHistoryMessages();
+	    //监听来自消息列表的新消息
+	    api.addEventListener({
+            name: 'getNewMessages'
+        }, function(ret){
+        	//alert(JSON.stringify(ret.value));
+            if(ret && ret.value){
+            	//如果当前消息的目标id等于当前会话目标id，写入，否则状态栏提醒
+            	if(ret.value.message.targetId==targetId){
+            		var html = '';
+           			html += '<div class="aui-chat-receiver" id="message-'+ret.value.message.messageId+'">';
+        			html += '<div class="aui-chat-receiver-avatar"><img src="'+targetAvatar+'"></div>';
+        			html += '<div class="aui-chat-receiver-cont">';
+            		html += '<div class="aui-chat-left-triangle"></div>';
+            		switch(ret.value.message.objectName){
+                        //文字消息
+                        case 'RC:TxtMsg':
+                            html += '<span>'+transText(ret.value.message.content.text)+'</span>';
+                        break;
+                        //图片消息
+                        case 'RC:ImgMsg':
+                            html += '<span class="aui-chat-img chat-img"><img src="'+ret.value.message.content.imageUrl+'" /></span>';
+                        break;
+                        //语音消息
+                        case 'RC:VcMsg':
+                            //alert(JSON.stringify(ret.value.message.content));
+                        	html += '<div class="aui-chat-status">'+ret.value.message.content.duration+'s</div>';
+                            html += '<span tapmode onclick="playVoice(\''+ret.value.message.content.voicePath+'\',\''+ret.value.message.messageId+'\')" ><i class="aui-iconfont aui-icon-sound" id="messageVoice-'+ret.value.message.messageId+'"></i></span>';
+                        break;
+                        //图文消息
+                        case 'RC:ImgTextMsg':
+                            html += '<span>[图文消息]</span>';
+                        break;
+                        //位置消息
+                        case 'RC:LBSMsg':
+                            html += '<span class="aui-chat-img"><img src="http://api.map.baidu.com/staticimage?center='+ret.value.message.content.longitude+','+ret.value.message.content.latitude+'&width=300&height=180&zoom=15&copyright=1" /></span>';
+                            html += '<p>'+ret.value.message.content.poi+'</p>';
+                        break;
+                    }
+            		
+        			html += '</div>';
+    				html += '</div>';
+               		$api.append($api.byId("messageList"),html);
+               		api.parseTapmode();
+               		setTimeout(function(){
+               			window.scrollTo(0,$api.offset($api.byId("messageList")).h);
+               		},100)
+               		
+            	}
+            }
+
+        })
+		//监听发送的新消息
+		api.addEventListener({
+            name: 'backSendMessage'
+        }, function(ret){
+            if(ret && ret.value){
+            	//alert(JSON.stringify(ret.value));
+            	//如果当前消息的目标id等于当前会话目标id，写入，否则状态栏提醒
+            	if(ret.value.message.targetId==targetId){
+            		var html = '';
+           			html += '<div class="aui-chat-sender" id="message-'+ret.value.message.messageId+'">';
+        			html += '<div class="aui-chat-sender-avatar"><img src="'+myAvatar+'"></div>';
+        			html += '<div class="aui-chat-sender-cont">';
+            		html += '<div class="aui-chat-right-triangle"></div>';
+            		switch(ret.value.message.objectName){
+                        //文字消息
+                        case 'RC:TxtMsg':
+                            html += '<span>'+transText(ret.value.message.content.text)+'</span>';
+                        break;
+                        //图片消息
+                        case 'RC:ImgMsg':
+                        	html += '<div class="aui-chat-status chat-img" id="messageStatus-'+ret.value.message.messageId+'"><i class="aui-iconfont aui-icon-loading aui-chat-progress"></i></div>';
+                            html += '<span class="aui-chat-img"><img src="'+ret.value.message.content.thumbPath+'" /></span>';
+                        break;
+                        //语音消息
+                        case 'RC:VcMsg':
+                        	//alert(JSON.stringify(ret.value.message.content));
+                        	html += '<div class="aui-chat-status">'+ret.value.message.content.duration+'s</div>';
+                            html += '<span tapmode onclick="playVoice(\''+ret.value.message.content.voicePath+'\',\''+ret.value.message.messageId+'\')"><i class="aui-iconfont aui-icon-sound" id="messageVoice-'+ret.value.message.messageId+'"></i></span>';
+                        break;
+                        //图文消息
+                        case 'RC:ImgTextMsg':
+                            html += '<span>[图文消息]</span>';
+                        break;
+                        //位置消息
+                        case 'RC:LBSMsg':
+                            html += '<span class="aui-chat-img"><img src="http://api.map.baidu.com/staticimage?center='+ret.value.message.content.longitude+','+ret.value.message.content.latitude+'&width=300&height=180&zoom=15&copyright=1" /></span>';
+                            html += '<p>'+ret.value.message.content.poi+'</p>';
+                        break;
+                    }
+            		
+        			html += '</div>';
+    				html += '</div>';
+               		$api.append($api.byId("messageList"),html);
+               		api.parseTapmode();
+               		window.scrollTo(0,$api.offset($api.byId("messageList")).h);
+            	}
+            }
+        })
+		//监听发送的新消息是否完成
+		api.addEventListener({
+            name: 'backSendMessageSuccess'
+        }, function(ret){
+            if(ret && ret.value){
+            	if($api.byId("messageStatus-"+ret.value.messageId)){
+            		$api.remove($api.byId("messageStatus-"+ret.value.messageId));
+            	}
+            }
+        })
+		
+        chatBox = api.require('UIChatBox');
+        openChatBox();
+        //监听键盘聊天框键盘弹出,用于调整聊天窗口高度
+        chatBox.addEventListener({
+		    target: 'inputBar',
+		    name: 'move'
+		}, function(ret,err){
+		    if(ret.panelHeight>0){
+		    	api.setFrameAttr({
+				    name: 'chat_private_frm',
+				    rect:{
+				        h:api.frameHeight-ret.panelHeight
+				    }
+				});
+		    }else{
+		    	api.setFrameAttr({
+				    name: 'chat_private_frm',
+				    rect:{
+				        h:api.frameHeight
+				    }
+				});
+		    }
+		    setTimeout(function(){
+		    	window.scrollTo(0,$api.offset($api.byId("messageList")).h);
+		    },200)
+		    
+		});
+		//监听按下录音
+		chatBox.addEventListener({
+		    target: 'recordBtn',
+		    name: 'press'
+		}, function(ret,err){
+		    api.startRecord({
+			    //path: 'fs://1.amr'
+			});
+		});
+		//监听松开录音键
+		chatBox.addEventListener({
+		    target: 'recordBtn',
+		    name: 'press_cancel'
+		}, function(ret,err){
+		    //松开后停止录音
+		    api.stopRecord(
+			    function(ret,err){
+			        if (ret && ret.duration > 0) {
+			        	api.sendEvent({
+				    		name:'sendMessage',
+				    		extra: {
+				    			targetId:targetId,
+				    			objectName:'RC:VcMsg',
+				    			conversationType:'PRIVATE',
+				    			message:ret
+				    		}
+				    	})
+			            //api.alert({msg:('文件路径--'+ret.path+';录音时长:'+ret.duration+'s')});
+			        }
+			    }
+			);
+		});
+    }
+    //获取历史消息
+    function getHistoryMessages(){
+    	//通过sendEvent方法从message_list中获取当前会话历史消息,发送目标id，消息类型，最后一条id
+    	api.sendEvent({
+            name: 'getHistoryMessages',
+            extra: {targetId:targetId,type:'PRIVATE'}
+        });
+        //监听获取历史消息
+        api.addEventListener({
+            name: 'backHistoryMessages'
+        }, function(ret){
+        	//alert(JSON.stringify(ret.value.message));
+            if(ret && ret.value.message){
+            	var myUserid = $api.getStorage('userid');
+               	if(ret.value.message){
+               		var messageList = ret.value.message.sort(getSortFun('asc', 'sentTime'));
+               		var html = '';
+               		for(var i in messageList){
+               			if(messageList[i].senderUserId==myUserid){
+               				//当前发送用户
+               				html += '<div class="aui-chat-sender" id="message-'+messageList[i].messageId+'">';
+	            			html += '<div class="aui-chat-sender-avatar"><img src="'+myAvatar+'"></div>';
+	            			html += '<div class="aui-chat-sender-cont">';
+	                		html += '<div class="aui-chat-right-triangle"></div>';
+               			}else{
+               				html += '<div class="aui-chat-receiver" id="message-'+messageList[i].messageId+'">';
+	            			html += '<div class="aui-chat-receiver-avatar"><img src="'+targetAvatar+'"></div>';
+	            			html += '<div class="aui-chat-receiver-cont">';
+	                		html += '<div class="aui-chat-left-triangle"></div>';
+               			}
+                		switch(messageList[i].objectName){
+
+	                        //文字消息
+	                        case 'RC:TxtMsg':
+	                            html += '<span>'+transText(messageList[i].content.text)+'</span>';
+	                        break;
+	                        //图片消息
+	                        case 'RC:ImgMsg':
+	                            html += '<span class="aui-chat-img chat-img"><img src="'+messageList[i].content.imageUrl+'" /></span>';
+	                        break;
+	                        //语音消息
+	                        case 'RC:VcMsg':
+	                            //html += '<span>[语音消息]</span>';
+	                            html += '<div class="aui-chat-status">'+messageList[i].content.duration+'s</div>';
+                            	html += '<span tapmode onclick="playVoice(\''+messageList[i].content.voicePath+'\',\''+messageList[i].messageId+'\')"><i class="aui-iconfont aui-icon-sound" id="messageVoice-'+messageList[i].messageId+'"></i></span>';
+	                        break;
+	                        //图文消息
+	                        case 'RC:ImgTextMsg':
+	                            html += '<span>[图文消息]</span>';
+	                        break;
+	                        //位置消息
+	                        case 'RC:LBSMsg':
+	                            html += '<span class="aui-chat-img"><img src="http://api.map.baidu.com/staticimage?center='+messageList[i].content.longitude+','+messageList[i].content.latitude+'&width=300&height=180&zoom=15&copyright=1" /></span>';
+                            	html += '<p>'+messageList[i].content.poi+'</p>';
+	                        break;
+	                    }
+                		
+            			html += '</div>';
+        				html += '</div>';
+               		}
+               		$api.prepend($api.byId("messageList"),html);
+               		api.parseTapmode();
+               		setTimeout(function(){
+               			window.scrollTo(0,$api.offset($api.byId("messageList")).h);
+               		},300)
+               		
+               	}
+            }
+        });
+    }
+    //排序函数
+	function getSortFun(order, sortBy) {
+	    var ordAlpah = (order == 'asc') ? '>' : '<';
+	    var sortFun = new Function('a', 'b', 'return a.' + sortBy + ordAlpah + 'b.' + sortBy + '?1:-1');
+	    return sortFun;
+	}
+    //表情处理
+	function transText(text, imgWidth, imgHeight){
+	    var imgWidth = imgWidth || 24;
+	    var imgHeight = imgHeight || 24;
+	    var regx= /\[(.*?)\]/gm;
+	    var textTransed = text.replace(regx,function(match){
+	        var imgSrc = emotionData[match];
+	        if( !imgSrc){ /* 说明不对应任何表情,直接返回即可.*/
+	            return match;
+	        }
+	        var img = "<img src='" + imgSrc+ "' width='" + imgWidth +  "' height ='" + imgHeight +"' />";
+	        return img;
+	    });
+	    return textTransed;   
+	}
+	/*获取所有表情图片的名称和真实URL地址，以JSON对象形式返回。其中以表情文本为 属性名，以图片真实路径为属性值*/
+	function getImgsPaths(sourcePathOfChatBox, callback){
+	    var jsonPath = sourcePathOfChatBox + "/emotion.json";//表情的JSON数组
+	    api.readFile({
+	        path: jsonPath
+	    },function(ret,err){
+	        if(ret.status){
+	            var emotionArray = JSON.parse(ret.data);
+	            var emotion = {};
+	            for(var i in emotionArray){
+	                var emotionItem = emotionArray[i];
+	                var emotionText = emotionItem["text"];
+	                var emotionUrl = "../../image/emotion/"+emotionItem["name"]+".png";
+	                emotion[emotionText] = emotionUrl;
+	            }
+	            /*把emotion对象 回调出去*/
+	            if("function" === typeof(callback)){
+	                callback(emotion);
+	            }
+	        }
+	    });
+	}
+    function openChatBox(){
+		chatBox.open({
+		    placeholder: '',
+		    maxRows: 4,
+		    emotionPath: 'widget://image/emotion',
+		    texts: {
+		        recordBtn: {
+		            normalTitle: '按住 说话',
+		            activeTitle: '松开 结束'
+		        }
+		    },
+		    styles: {
+		        inputBar: {
+		            borderColor: '#d9d9d9',
+		            bgColor: '#f2f2f2'
+		        },
+		        inputBox: {
+		            borderColor: '#B3B3B3',
+		            bgColor: '#FFFFFF'
+		        },
+		        emotionBtn: {
+		            normalImg: 'widget://image/chatBox/face1.png'
+		        },
+		        extrasBtn: {
+		            normalImg: 'widget://image/chatBox/add1.png'
+		        },
+		        keyboardBtn: {
+		            normalImg: 'widget://image/chatBox/key1.png'
+		        },
+		        speechBtn: {
+		            normalImg: 'widget://image/chatBox/key3.png'
+		        },
+		        recordBtn: {
+		            normalBg: '#c4c4c4',
+		            activeBg: '#999999',
+		            color: '#000',
+		            size: 14
+		        },
+		        indicator: {
+		            target: 'both',
+		            color: '#c4c4c4',
+		            activeColor: '#9e9e9e'
+		        }
+		    },
+		    extras: {
+		        titleSize: 10,
+		        titleColor: '#a3a3a3',
+		        btns: [{
+		            title: '图片',
+		            normalImg: 'widget://image/chatBox/album1.png',
+		            activeImg: 'widget://image/chatBox/album2.png'
+		        },{
+		            title: '拍照',
+		            normalImg: 'widget://image/chatBox/cam1.png',
+		            activeImg: 'widget://image/chatBox/cam2.png'
+		        },{
+		            title: '位置',
+		            normalImg: 'widget://image/chatBox/loc1.png',
+		            activeImg: 'widget://image/chatBox/loc2.png'
+		        }]
+		    }
+		}, function(ret){
+		    //点击附加功能面板
+		    if(ret.eventType == 'clickExtras'){
+		        //alert("用户点击了第"+ ret.index +"个按钮");
+		        if(ret.index==0){
+		        	//图片
+	        		api.getPicture({
+					    sourceType: 'library',
+					    encodingType: 'jpg',
+					    mediaValue: 'pic',
+					    destinationType: 'url',
+					    allowEdit: true,
+					    quality: 70,
+					    targetWidth:320,
+					    saveToPhotoAlbum: false
+					}, function(ret, err){ 
+					    if (ret) {
+					        api.sendEvent({
+					    		name:'sendMessage',
+					    		extra: {
+					    			targetId:targetId,
+					    			objectName:'RC:ImgMsg',
+					    			conversationType:'PRIVATE',
+					    			message:ret.data
+					    		}
+					    	})
+					    }
+					});
+		        }else if(ret.index==1){
+		        	//图片
+	        		api.getPicture({
+					    sourceType: 'camera',
+					    encodingType: 'jpg',
+					    mediaValue: 'pic',
+					    destinationType: 'url',
+					    allowEdit: true,
+					    quality: 70,
+					    targetWidth:640,
+					    saveToPhotoAlbum: false
+					}, function(ret, err){ 
+					    if (ret) {
+					        api.sendEvent({
+					    		name:'sendMessage',
+					    		extra: {
+					    			targetId:targetId,
+					    			objectName:'RC:ImgMsg',
+					    			conversationType:'PRIVATE',
+					    			message:ret.data
+					    		}
+					    	})
+					    }
+					});
+		        }else if(ret.index==2){
+		        	//位置
+		        	api.openWin({
+		        		name:'bmap_add_win',
+		        		url:'bmap_add_win.html',
+		        		delay:300,
+		        		pageParam:{
+		        			targetId:targetId
+		        		},
+		        		animation:{
+		        			type:'fade'
+		        		}
+		        	})
+		        }
+		        
+		    }
+		    //点击发送按钮
+		    if(ret.eventType == 'send' && ret.msg){
+		    	//通过sendEvent将发送内容广博，消息页面接收并广播回来
+		    	//单聊文字消息类型
+		    	api.sendEvent({
+		    		name:'sendMessage',
+		    		extra: {
+		    			targetId:targetId,
+		    			objectName:'RC:TxtMsg',
+		    			conversationType:'PRIVATE',
+		    			message:ret.msg
+		    		}
+		    	})
+		        //alert('输入的内容是：'+ transText(ret.msg));
+		    }
+		});
+    }
+    
+</script>
+</html>

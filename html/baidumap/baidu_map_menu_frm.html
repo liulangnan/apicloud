@@ -1,0 +1,133 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+body {
+    background: #f4f4f4;
+}
+
+.aui-btn {
+    padding-left: 8px;
+    padding-right: 8px;
+}
+</style>
+<body>
+    <div class="aui-content">
+        <ul class="aui-list-view">
+            <li class="aui-list-view-cell">
+                <div class="aui-btn" tapmode onclick="demo('open')">打开</div>
+                <div class="aui-btn" tapmode onclick="demo('close')">关闭</div>
+                <div class="aui-btn" tapmode onclick="demo('show')">显示</div>
+                <div class="aui-btn" tapmode onclick="demo('hide')">隐藏</div>
+                <div class="aui-btn aui-btn-warning" tapmode onclick="demo('restart')">初始化</div>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('getLocation')">
+                <a class="aui-arrow-right">定位(getLocation)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('getCoordsFromName')">
+                <a class="aui-arrow-right">根据地址查找坐标(getCoordsFromName)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('getNameFromCoords')">
+                <a class="aui-arrow-right">根据坐标查找地址(getNameFromCoords)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('getDistance')">
+                <a class="aui-arrow-right">获取两点距离(getDistance)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('showUserLocation')">
+                <a class="aui-arrow-right">显示用户位置(showUserLocation)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('getDistance')">
+                <a class="aui-arrow-right">获取两点距离(getDistance)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setCenter')">
+                <a class="aui-arrow-right">设置地图中心点(setCenter)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setZoomLevel')">
+                <a class="aui-arrow-right">设置缩放等级(setZoomLevel)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setRotation')">
+                <a class="aui-arrow-right">设置旋转角度(setRotation)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setOverlook')">
+                <a class="aui-arrow-right">设置俯视角度(setOverlook)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setScaleBar')">
+                <a class="aui-arrow-right">设置地图比例尺(setScaleBar)</a>
+            </li>
+
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setCompass')">
+                <a class="aui-arrow-right">设置指南针位置(setCompass)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setTraffic')">
+                <a class="aui-arrow-right">设置交通路况(setTraffic)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setHeatMap')">
+                <a class="aui-arrow-right">设置城市热力图(setHeatMap)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setBuilding')">
+                <a class="aui-arrow-right">是否显示3D 楼块效果(setBuilding)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('setRegion')">
+                <a class="aui-arrow-right">设置显示范围（矩形区域）(setRegion)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('transCoords')">
+                <a class="aui-arrow-right">坐标转换(transCoords)</a>
+            </li>
+
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('addEventListener')">
+                <a class="aui-arrow-right">监听相关事件(addEventListener)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('removeEventListener')">
+                <a class="aui-arrow-right">停止监听相关事件(removeEventListener)</a>
+            </li>
+
+
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('addAnnotations')">
+                <a class="aui-arrow-right">添加标注信息(addAnnotations)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('addBillboard')">
+                <a class="aui-arrow-right">添加布告牌(addBillboard)</a>
+            </li>
+
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('removeEventListener')">
+                <a class="aui-arrow-right">停止监听相关事件(removeEventListener)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('searchRoute')">
+                <a class="aui-arrow-right">搜索路线方案(searchRoute)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('removeRoute')">
+                <a class="aui-arrow-right">移除指定的路线(removeRoute)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('searchInCity')">
+                <a class="aui-arrow-right">搜索兴趣点(searchInCity)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('searchNearby')">
+                <a class="aui-arrow-right">圆形区域内搜索兴趣点(searchNearby)</a>
+            </li>
+            <li class="aui-list-view-cell" tapmode="active" onclick="demo('autocomplete')">
+                <a class="aui-arrow-right">关键词自动返回(autocomplete)</a>
+            </li>
+        </ul>
+    </div>
+    <div class="aui-content">
+        
+    </div>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    function demo(method){
+        api.execScript({
+            frameName:'baidu_map_frm',
+            script:''+method+'()'
+        })
+    }
+    apiready = function(){
+        api.parseTapmode();
+    };
+</script>
+</html>

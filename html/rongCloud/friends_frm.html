@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <meta name="format-detection" content="telephone=no,email=no,date=no,address=no">
+    <title>会话</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+    
+</head>
+<style type="text/css">
+.aui-content {
+    margin-bottom: 0;
+}
+</style>
+<body>
+    <div class="aui-content">
+        <ul class="aui-user-view" id="friendsList">
+            <p class="aui-text-center" id="noFriends">暂无好友</p>
+        </ul>
+    </div>
+</body>
+<script type="text/javascript" src="../../script/api.js"></script>
+<script type="text/javascript">
+    var page=1,loadLock=false;
+    apiready = function(){
+        api.showProgress({
+            style: 'default',
+            animationType: 'fade',
+            title: '加载中',
+            text: '请稍候',
+            modal: false
+        });
+        api.parseTapmode();
+        getData();
+        api.hideProgress();
+        api.addEventListener({
+            name:'scrolltobottom',
+            extra:{
+                threshold:200
+            }
+        },function(ret,err){
+            if(loadLock==false){
+                getData();
+            }
+        });
+    };
+    function getData(){
+        loadLock=true;
+        api.ajax({
+            url: 'http://www.maodoo.net/App/Index/getFriends',
+            method: 'post',
+            cache:true,
+            timeout: 30,
+            dataType: 'json',
+            returnAll:false,
+            data:{
+                values:{
+                    page:page,
+                    userid:$api.getStorage('userid')
+                }
+            }
+        },function(ret,err){
+            if (ret.code==200) {
+                var html = '';
+                for(var i in ret.data){
+                    html += '<li class="aui-user-view-cell aui-img" tapmode onclick="openChat('+ret.data[i].userid+')">';
+                        html += '<img class="aui-img-object aui-pull-left" src="'+ret.data[i].avatar+'" id="avatar-'+ret.data[i].userid+'">';
+                        html += '<div class="aui-img-body">';
+                            html += '<span id="nickname-'+ret.data[i].userid+'">'+ret.data[i].nickname+'</span>';
+                        html += '</div>';
+                    html += '</li>'
+                }
+                if($api.byId("noFriends")){
+                    $api.remove($api.byId("noFriends"));
+                }
+                $api.append($api.byId("friendsList"),html);
+                api.parseTapmode();
+                
+                page++;
+                loadLock=false;
+                
+            }
+        });
+    }
+    /**
+    *打开会话窗口
+    *传入目标id，及会话类型
+    */
+    function openChat(targetId){
+        //当前正在会话的targetId
+        targetIdIng = targetId;
+        var targetAvatar = $api.attr($api.byId("avatar-"+targetId),'src');
+        var targetNickname = $api.text($api.byId('nickname-'+targetId));
+        api.openWin({
+            name:'chat_private_win',
+            url:'chat_private_win.html',
+            delay:300,
+            pageParam:{
+                targetId:targetId,
+                targetAvatar:targetAvatar,
+                targetNickname:targetNickname
+            }
+        })
+    }
+</script>
+</html>

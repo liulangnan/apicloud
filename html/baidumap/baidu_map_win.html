@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+.active {
+    background-color: #f4f4f4;
+}
+</style>
+<body>
+    <header class="aui-bar aui-bar-nav aui-bar-info" id="aui-header">
+        <a class="aui-btn aui-btn-info aui-pull-left" id="back">
+            <span class="aui-iconfont aui-icon-left"></span>
+        </a>
+        <div class="aui-title">百度地图</div>
+    </header>
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+    
+    apiready = function(){
+        var winHeight = api.winHeight;
+        var header = $api.byId('aui-header');
+        var headerPos = $api.offset(header);
+        var body_h = $api.offset($api.dom('body')).h;
+        api.openFrame({
+            name: 'baidu_map_frm',
+            url: 'baidu_map_frm.html',
+            bounces: false,
+            rect: {
+                x: 0,
+                y: headerPos.h,
+                w: 'auto',
+                h: '260'
+            },
+            pageParam:{
+                height:headerPos.h
+            }
+        });
+        api.openFrame({
+            name: 'baidu_map_menu_frm',
+            url: 'baidu_map_menu_frm.html',
+            bounces: true,
+            vScrollBarEnabled:false,
+            rect: {
+                x: 0,
+                y: headerPos.h+260,
+                w: 'auto',
+                h: 'auto'
+            }
+        });
+        $api.addEvt($api.byId('back'), 'click', function(){
+            api.closeWin();
+        });
+    };
+</script>
+</html>

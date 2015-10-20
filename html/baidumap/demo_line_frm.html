@@ -1,0 +1,161 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <title>APP</title>
+    <link rel="stylesheet" type="text/css" href="../../css/aui.css" />
+</head>
+<style type="text/css">
+body {
+    background-color: #ffffff;
+}
+</style>
+<body>
+    
+</body>
+<script type="text/javascript" src="../../script/api.js" ></script>
+<script type="text/javascript">
+
+	var winHeight,
+		map,
+		lat='39.989539',
+		lon='116.384767';
+    apiready = function(){
+    	winHeight = api.pageParam.height;
+        api.parseTapmode();
+        map = api.require('bMap');
+        //打开地图
+        open();
+    };
+    function open(){
+		map.open({
+		    rect: {
+		        x: 0,
+		        y: winHeight,
+		        w: 'auto',
+		        h: api.frameHeight
+		    },
+		    center: {
+		        lon: lon,
+		        lat: lat
+		    },
+		    zoomLevel: 17,
+		    showUserLocation: true,
+		    fixedOn: '',
+		    fixed: true
+		}, function(ret){
+			if(ret){
+				//获取位置坐标
+				getLocation();
+			}
+		});
+    }
+    function getLocation(){
+    	api.showProgress({
+		    style: 'default',
+		    animationType: 'fade',
+		    title: '定位中...',
+		    text: '请稍候...',
+		    modal: false
+		});
+    	map.getLocation({
+		    accuracy: '100m',
+		    autoStop: true,
+		    filter: 1
+		}, function(ret, err){
+			api.hideProgress();
+		    if(ret.status){
+		    	lat = ret.lat;
+		        lon = ret.lon;
+		        //设置地图中心
+		        map.setCenter({
+				    coords: {
+				        lon: lon,
+				        lat: lat
+				    },
+				    animation:false
+				});
+				//根据坐标获取位置
+				getNameFromCoords();
+		    }
+		    
+		});
+    }
+
+    function getNameFromCoords(){
+    	map.getNameFromCoords({
+		    lon: lon,
+		    lat: lat
+		},function(ret,err){
+		    if(ret.status){
+		        api.execScript({
+		            frameName:'demo_line_footer_frm',
+		            script:'showStartCity("'+ret.address+'")'
+		        })
+		    }
+		});
+    }
+    function drawRoute(endLat,endLon){
+    	api.showProgress({
+		    style: 'default',
+		    animationType: 'fade',
+		    title: '绘制路线...',
+		    text: '请稍候...',
+		    modal: false
+		});
+		map.removeRoute({
+		    ids: [1]
+		});
+    	map.searchRoute({
+		    id: 1,
+		    type: 'drive',
+		    policy: 'ecar_fee_first',
+		    start: {
+		        lon: lon,
+		        lat: lat
+		    },
+		    end: {
+		        lon: endLon,
+		        lat: endLat
+		    }
+		}, function(ret, err){
+		    if(ret.status){
+		        map.searchRoute({
+				    type: 'drive',
+				    policy: 'ecar_fee_first',
+				    start: {
+				        lon: lon,
+				        lat: lat
+				    },
+				    end: {
+				        lat: endLat,
+				        lon: endLon
+				    }
+				}, function(ret, err){
+				    if(ret.status){
+				        map.drawRoute({
+				            id: 1,
+				            index: 0,
+				            styles: {
+				                start: {
+				                    icon: 'widget://image/mark_start.png'
+				                },
+				                end: {
+				                    icon: 'widget://image/mark_end.png'
+				                }
+				            }
+				        }, function(ret){
+				           //api.alert({msg:JSON.stringify(ret)});
+				        });
+				    } else {
+				       //api.alert({msg:JSON.stringify(err)});
+				    }
+				});
+		    }
+		    api.hideProgress();
+		});
+    	
+    }
+</script>
+</html>
